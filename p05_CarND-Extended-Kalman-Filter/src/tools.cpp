@@ -19,11 +19,11 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
    rmse << 0,0,0,0;
 
    if(estimations.size() == 0){
-     cout << "estimation vector is empty" << endl;
+     std::cout << "estimation vector is empty" << std::endl;
      return rmse;
    }
    if(estimations.size() != ground_truth.size()){
-     cout << "estimation and ground_truth have different vector sizes" << endl;
+     std::cout << "estimation and ground_truth have different vector sizes" << std::endl;
      return rmse;
    }
 
@@ -56,7 +56,7 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
 
   // check division by zero
   if(fabs(norm2) < 0.0001){
-      cout << "Hj cannot be calculated" << std::endl;
+      std::cout << "Hj cannot be calculated" << std::endl;
   }else{
   // compute the Jacobian matrix
       Hj << px/norm, py/norm, 0, 0,
