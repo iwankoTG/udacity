@@ -1,5 +1,6 @@
 #include "kalman_filter.h"
 #include <iostream>
+//#include "math.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -57,6 +58,7 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
    float vy = x_(3);
    VectorXd hx(3);
   
+   /**
    std::cout << "x_" << std::endl;
    std::cout << x_ << std::endl;
    std::cout << "P_" << std::endl;
@@ -68,27 +70,23 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
    std::cout << "R" << std::endl;
    std::cout << R_ << std::endl;
    std::cout << "Q" << std::endl;
-   std::cout << Q_ << std::endl;
+   std::cout << Q_ << std::endl; **/
 
    hx << sqrt(px*px + py*py),
          atan2(py, px),
          (px*vx + py*vy)/sqrt(px*px + py*py);
 
-   //std::cout << hx << std::endl;
    VectorXd y = z - hx;
-   std::cout << y << std::endl;
+   // make phi between -pi to pi
+   double val = (y(1) + pi_)/(2*pi_);
+   double dum;
+   y(1) = modf(val,&dum)*2*pi_ - pi_;
+     
    MatrixXd S = H_*P_*H_.transpose() + R_;
-   std::cout << "S" << std::endl;
-   std::cout << S << std::endl;
    MatrixXd K = P_*H_.transpose()*S.inverse();
-   std::cout << "K" << std::endl;
-   std::cout << K << std::endl;
    // new state
    long x_size = x_.size();
    MatrixXd I = MatrixXd::Identity(x_size, x_size);
-   std::cout << "x_" << std::endl;
    x_ = x_ + K*y;
-   std::cout << x_ << std::endl;
    P_ = (I-K*H_)*P_;
-   std::cout << P_ << std::endl;
 }
