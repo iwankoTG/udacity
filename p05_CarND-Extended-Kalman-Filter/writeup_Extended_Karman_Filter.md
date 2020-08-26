@@ -1,12 +1,12 @@
-# **Extended Karman Filter**
+# **Extended Kalman Filter**
 
 ## Writeup
 
-### Even though lessons were very helpful and well explained, I could not feel I could understand the Kalman Filter properly. Through this project I reviewed the contents, the equations and the codes in the practice section and tried to grasp the essense of the Extended Kalman Filter.
+### Even though lessons were very helpful and well explained, I could not feel I could understand the Kalman Filter properly. Through this project, I reviewed the contents, the equations and the codes provided in the practice section and tried to grasp the essense of the Extended Kalman Filter.
 
 ---
 
-**Extended Karman Filter Project**
+**Extended Kalman Filter Project**
 
 The goals / steps of this project are the following:
 * Complete the codes provided in the src directory, and make sure it compiles properly
@@ -19,13 +19,13 @@ The goals / steps of this project are the following:
 [//]: # (Image References)
 
 [image1]: ./writeup/p05_rmse_data1.jpg "RMSE of data1"
-[image2]: ./writeup/p05_rmse_data2.png "RMSE of data2"
+[image2]: ./writeup/p05_rmse_data2.jpg "RMSE of data2"
 
 ## Rubric Points
 ### Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/748/view) individually and describe how I addressed each point in my implementation.  
 
 ---
-### 1. Complete the codes provided in the src directory, and make sure it compiles properly
+### 1. Complete the codes provided in the src directory, and make sure it compiles properly.
 
 My project includes the following files in src directory:
 * main.cpp main file which connect simulator and kalman filter code
@@ -34,13 +34,13 @@ My project includes the following files in src directory:
 * tools.cpp/h describing RMSE and Jacobian calculation
 * writeup_Extended_Kalman_Filter.md summarizing the results
 
-### 2. Ensure that the accuracy measured by RMSE for the given data meets the critetia of the Rubric
-I got the RMSE of px, py, vx, vy and made graphs of the change overtime. The final values of RMSE were (0.0973, 0.0855, 0.4513, 0.4399) for data1 and (0.0726, 0.0967, 0.4579, 0.4966) for data2. These values are less than the accuracy criteria given in the Rubric, which are (0.11, 0.11, 0.52, 0.52). 
+### 2. Ensure that the accuracy measured by RMSE for the given data meets the critetia of the Rubric.
+I got the RMSE of px, py, vx, vy and made graphs of the change overtime. The final values of RMSE were (0.0973, 0.0855, 0.4513, 0.4399) for data1 and (0.0726, 0.0967, 0.4579, 0.4966) for data2. These values are less than the accuracy criteria given in the Rubric, which are (0.11, 0.11, 0.52, 0.52).
 
 ![alt text][image1]
 ![alt text][image2]
 
-### 3. Follows the algorithm criteria described in the Rubric, and make sure it meets specifications
+### 3. Follows the algorithm criteria described in the Rubric, and make sure it meets specifications.
 I modified kalman_filter.cpp/h, FusionEKF.cpp/h and tools.cpp/h to meet the specifications written in Rubric.
 Followings are corrections I made and lesson codes I used.
 
@@ -63,7 +63,7 @@ Before the prediction step, I updated the state transition matrix F according to
 I called different update step depending on the sensor type. If the sensor was a laser, I used R_laser_ and H_laser_ defined in the constructor and called the Update function. However, if the sensor was a radar, I calculated the conversion matrix H using Jacobian, and then called UpdateEKF function.
 
 
-### 4. Follows the code Efficiency criteria to avoid unnecessary calculations
+### 4. Follows the code Efficiency criteria to avoid unnecessary calculations.
 Below are some points that I have made to make the code more efficient.
 1. I decleared noise values noise_ax and noise_ay in the constructor of FusionEKF, not in the ProcessMeasurement function.
 2. I wrote code without using if sentence, where the range of phi was limited from -pi to pi.
