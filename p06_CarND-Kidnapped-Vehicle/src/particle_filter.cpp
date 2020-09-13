@@ -66,21 +66,33 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
    std::normal_distribution<double> dist_y(0, std_pos[1]);
    std::normal_distribution<double> dist_theta(0, std_pos[2]);
 
-   /*for (int i = 0; i < num_particles; ++i){
-     Particle p;
-     p = particles[i];
-     p.x += velocity/yaw_rate*(sin(p.theta + yaw_rate*delta_t) - sin(p.theta)) + dist_x(gen);
-     p.y += velocity/yaw_rate*(cos(p.theta) - cos(p.theta + yaw_rate*delta_t)) + dist_y(gen);
-     p.theta += yaw_rate*delta_t + dist_theta(gen);
-     particles[i] = p;
-   }*/
-   for (int i = 0; i < num_particles; ++i){
-     double theta = particles[i].theta;
-     particles[i].x += velocity/yaw_rate*(sin(theta + yaw_rate*delta_t) - sin(theta)) + dist_x(gen);
-     particles[i].y += velocity/yaw_rate*(cos(theta) - cos(theta + yaw_rate*delta_t)) + dist_y(gen);
-     particles[i].theta += yaw_rate*delta_t + dist_theta(gen);
+   if(std::abs(yaw_rate) > 1.0E-08){
+     for (int i = 0; i < num_particles; ++i){
+       Particle p;
+       p = particles[i];
+       p.x += velocity/yaw_rate*(sin(p.theta + yaw_rate*delta_t) - sin(p.theta)) + dist_x(gen);
+       p.y += velocity/yaw_rate*(cos(p.theta) - cos(p.theta + yaw_rate*delta_t)) + dist_y(gen);
+       p.theta += yaw_rate*delta_t + dist_theta(gen);
+       particles[i] = p;
+     }
+     /*for (int i = 0; i < num_particles; ++i){
+       double theta = particles[i].theta;
+       particles[i].x += velocity/yaw_rate*(sin(theta + yaw_rate*delta_t) - sin(theta)) + dist_x(gen);
+       particles[i].y += velocity/yaw_rate*(cos(theta) - cos(theta + yaw_rate*delta_t)) + dist_y(gen);
+       particles[i].theta += yaw_rate*delta_t + dist_theta(gen);
+     }*/
+   }else{
+     for (int i = 0; i < num_particles; ++i){
+       Particle p;
+       p = particles[i];
+       p.x += velocity*delta_t*cos(p.theta) + dist_x(gen);
+       p.y += velocity*delta_t*sin(p.theta) + dist_y(gen);
+       p.theta += dist_theta(gen);
+       particles[i] = p;
+     }
+     std::cout << "SMALL YAW RATE: yaw_rate =" << yaw_rate <<", " << std::abs(yaw_rate) << std::endl;
    }
-   std::cout << "prediction end" << std::endl;
+   std::cout << "prediction end, " << std::endl;
 }
 
 void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
@@ -172,17 +184,18 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
            landm = k;
          }
        }
-       double gap_x = xm - map_landmarks.landmark_list[landm].x_f;
-       double gap_y = ym - map_landmarks.landmark_list[landm].y_f;
+       //double gap_x = xm - map_landmarks.landmark_list[landm].x_f;
+       //double gap_y = ym - map_landmarks.landmark_list[landm].y_f;
        //std::cout << gap_x <<", " <<gap_y  <<", " << landm << std::endl;
        double wei_x = exp(-0.5*pow((xm - map_landmarks.landmark_list[landm].x_f)/std_landmark[0],2));
        double wei_y = exp(-0.5*pow((ym - map_landmarks.landmark_list[landm].y_f)/std_landmark[1],2));
        wei *= (coef*wei_x*wei_y);
-       std::cout << gap_x <<", " <<gap_y  <<", " << landm << ", " << wei_x <<", " <<wei_y  <<", " << coef << std::endl;
+       //std::cout << landm << ", " << wei_x <<", " <<wei_y  <<", " << coef <<", " << wei << std::endl;
      }
      particles[i].weight = wei;
-     std::cout << "particles[" << i << "]=" << wei << std::endl;
+     //std::cout << "particles[" << i << "]=" << wei << std::endl;
      if(wei < 0){
+       std::cout << " wei is incorrect: wei = " << wei << std::endl;
        abort();
      //  std::cout << "particles[" << i << "]=" << wei << std::endl;
      }
