@@ -75,4 +75,5 @@ This function resampled the particles based on the weights calculated by the upd
 
 ### summary
 With all of the above implementations, I was able to localize the vehicle by correctly using the particle  filter.
+
 ![alt text][image4]
