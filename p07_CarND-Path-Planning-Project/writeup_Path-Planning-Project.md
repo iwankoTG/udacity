@@ -17,8 +17,9 @@ Following points are need to be improved.
 
 [//]: # (Image References)
 
-[image1]: ./writeup/1_init_01.jpg "" !!!!!!
-[image2]: ./writeup/2_pred_01.jpg ""
+[image1]: ./writeup/1_start_graph.jpg "start_graph"
+[image2]: ./writeup/2_start_original.jpg "start_original"
+[image3]: ./writeup/3_start_improved.jpg "start_improved"
 
 ## Rubric Points
 ### Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/1971/view). As criterias of the rubric were checked automatically, I describe how I coded and debugged each function.  
@@ -55,9 +56,12 @@ from
 to
   if(ref_vel < 40.0 && too_close == false){...}
 ```
-
-
+Result of the improvement is shown as follows.
 ![alt text][image1]
+
+Unfortunately, the expected acceleration only happened at the very beginning. That was because most of the end points from the previous path were taken over, and only a few points were used to accerate at each step. However, the effect of the improvement worked as follows.
+![alt text][image2]
+![alt text][image3]
 
 ### 2. lane change ::
 As Arron's code showed us an example to change lane if there was a car in front of us on the same lane, I add simple logic to improve it. First I checked if lane change to the left or right was possible. That means changing to the right lane was possible if my car was on the lane 0 or 1, whereas changing to the left lane was possible if my car was on the lane 1 or 2.
