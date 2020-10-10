@@ -1,0 +1,113 @@
+# **Path Planning**
+
+## Writeup
+
+### After reviewing the lessons, I thhought I could understand the concept of behavior planning.
+However, once I started the project, I noticed that writing the code of planning was very difficult.
+As the project Q&A section was really helpful to start, I followed the outlines explained in the Q&A and incorpolate most of the Arron's code. After letting the car drive, checking the points that the car did not drive well, I added my own additional code to improve the driving.   
+
+---
+
+**Path Planning Project**
+
+The goals / steps of this project is to complete main.cpp:
+Following points are need to be improved.
+* The start of the car is very slow.
+* Lane change timings were not appropriate. The car sometimes hit to the other car on the targetted lane.
+
+[//]: # (Image References)
+
+[image1]: ./writeup/1_init_01.jpg "" !!!!!!
+[image2]: ./writeup/2_pred_01.jpg ""
+
+## Rubric Points
+### Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/1971/view). As criterias of the rubric were checked automatically, I describe how I coded and debugged each function.  
+
+---
+### 1. start of the car
+
+In Arron's code, refference velocity was increased 0.224 when the velocity was less than 49.5. This worked well when the car speeded up again after slowing down to avoide incident. However, at the very start and the speed of the car was very slow, the Arron's code needed to be improved to speed up more quickly.     
+
+I improved to make the car accelerate quickly.
+To speed up the car under the restriction of jerk and accleration(max jerk of 10m/s^3, max acceralation of 10m/s^2 from the rubric), I acceralate the car with constant jerk of 9.5.
+First, I calculated what the speed whould be(end_vel) as a result of the accelaration.
+``` acceralation
+  double Jc = 9.5;
+  int n_points = 50 - previous_path_x.size();
+  double dt = n_points*0.02;
+  double end_vel = Jc*dt*dt/2.0*2.24 + ref_vel;
+```
+Then, as far as the end_vel is less than the speed limit, I acceralate with constant jerk of Jc.
+``` acceralation
+  if(end_vel < 49.5){
+    for (int i = 1; i <= 50 - previous_path_x.size(); i++){
+      dt = i*0.02;
+      x_point = x_add_on + Jc*dt*dt*dt/6.0 + (ref_vel*dt)/2.24;
+      y_point = s(x_point);
+```
+Latter part of the loop was the same as Arron's code, converting back to the original coordinate system and adding to the next_x/y_vals. Here, I made sure that the x_add_on was set to zero only once before the loop, and watched out for the conversion between mph and meter per second.
+
+After a while, I have noticed if I acceralate the car if the end_vel was only slightly smaller than the max_vel, I could not slow down our ego car properly when there was another car on the same lane. Therefore, I changed the condition to acceralete to consider the status as follows.
+
+```acceralation
+from
+  if(ref_vel < 49.5){...
+to
+  if(ref_vel < 40.0 && too_close == false){...}
+```
+
+
+![alt text][image1]
+
+### 2. lane change ::
+As Arron's code showed us an example to change lane if there was a car in front of us on the same lane, I add simple logic to improve it. First I checked if lane change to the left or right was possible. That means changing to the right lane was possible if my car was on the lane 0 or 1, whereas changing to the left lane was possible if my car was on the lane 1 or 2.
+
+Then, I calculated the cost of change lane. The cost was set to be inversely proportional to the distance bewteen our car and the target car. As it was also dangerous if other cars existed on the target lane even if their position was behind me, I set the same const to the cars behind us but with smaller weight.
+
+```lane change
+  check_car_s += ((double)prev_size*0.02*check_speed);
+  if((check_car_s > car_s) && ((check_car_s-car_s) < 60)){
+    r_cost += 10.0/(check_car_s - car_s);
+  }
+  if((check_car_s <= car_s) && ((car_s - check_car_s) < 60)){
+    r_cost += 5.0/(car_s - check_car_s);
+  }
+```
+Then, I chose to change lane if the lane was available and the calculated cost was less than 1.0. Otherwise, slow down the car and wait for another chance.
+
+```lane change
+  if(r_cand != -1 && l_cand != -1){
+    if(r_cost < l_cost && r_cost < 1.0){
+      lane = r_cand;
+    }else if(l_cost < r_cost && l_cost < 1.0){
+      lane = l_cand;
+    }
+  }else if(l_cand != -1 && l_cost < 1.0){
+    lane = l_cand;
+  }else if(r_cand != -1 && r_cost < 1.0){
+    lane = r_cand;
+  }else{
+    ref_vel -= 0.224;
+  }
+```
+#### 4.1. association
+In order to associate the observed landmark measurements with the actual landmark position, I converted the landmark positions to the vehicle coordinate for each particle. I referred Section 15 in Lesson 5. Then, I used the dataAssociation function for the association.
+
+#### 4.2. likelyhood calculation
+It was proposed to use a mulivariate Gaussian distribution to calculate the likelihood. However, because the off-diagonal elements of the covariance matrix were zero(sigma_xy = 0, sigma_xx = sigma_yy = 0.3), the multivariate Gaussian distribution was the product of the univarite Gaussian distributions in the x and y directions.I referred quiz code of Section 25 of Lesson 2.
+
+|  number of particles |   success   |     error         |
+|:--------------------:|:-----------:|:-----------------:|
+|         1000         | out of time | xy:0.10 yaw:0.003 |
+|          500         | out of time | xy:0.11 yaw:0.003 |
+|          200         |   success   | xy:0.12 yaw:0.003 |
+|          100         |   success   | xy:0.12 yaw:0.003 |
+|           50         |   success   | xy:0.12 yaw:0.004 |
+|           30         |   success   | xy:0.15 yaw:0.005 |
+|           10         |   success   | xy:0.15 yaw:0.005 |
+
+### summary
+With all of the above implementations, ..................
+Also I was upset when I noticed that my GPU time was running out. Thank you very much for increasing my GPU time quickly responding to my request.
+
+![alt text][image4]
