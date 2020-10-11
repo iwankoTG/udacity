@@ -126,8 +126,6 @@ int main() {
               check_car_s += ((double)prev_size*0.02*check_speed);
               if((check_car_s > car_s) && ((check_car_s-car_s) < 30)){
                 too_close = true;
-              //}else if((check_car_s > car_s) && ((check_car_s-car_s) < 60) && (car_speed - check_speed > 10)){
-              //  too_close = true;
               }
             }
           }
@@ -201,14 +199,11 @@ int main() {
             }else{
               ref_vel -= 0.224;
             }
-            
-            
+                        
           }else if(ref_vel < 49.5){
             ref_vel += 0.224;
           }
-                
-                 
-          
+                          
           vector<double> ptsx;
           vector<double> ptsy;
 
@@ -287,15 +282,11 @@ int main() {
             double end_vel = Jc*dt*dt/2.0*2.24 + ref_vel;
             if(end_vel < keep_vel){
             std::cout << "accelerating:" <<ref_vel <<", " << end_vel << std::endl;
-            //std::cout << "coef:" <<n_points <<", " << Jc*dt*dt/2.0*2.24 << std::endl;
-            //double N = target_dist/((acc*0.02*0.02/2.0 + ref_vel*0.02)/2.24);
               for (int i = 1; i <= 50 - previous_path_x.size(); i++){
                 dt = i*0.02;
                 x_point = x_add_on + Jc*dt*dt*dt/6.0 + (ref_vel*dt)/2.24;
                 y_point = s(x_point);
               
-                //x_add_on = x_point;
- 
                 double x_ref = x_point;
                 double y_ref = y_point;
 
@@ -311,8 +302,6 @@ int main() {
               ref_vel = end_vel;
             }
           }else{          
-            //std::cout << "normal" << std::endl;
-            //original
             double target_x = 30.0;
             double target_y = s(target_x);
             double target_dist = sqrt((target_x)*(target_x)+(target_y)*(target_y));
@@ -336,20 +325,6 @@ int main() {
               next_y_vals.push_back(y_point);
           }
           }
-
-
-          
-          /*double dist_inc = 0.5;
-          for (int i = 0; i < 50; ++i) {
-            double next_s = car_s + (i+1)*dist_inc;
-            double next_d = 2+4*lane;
-            vector<double> xy = getXY(next_s, next_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-            next_x_vals.push_back(xy[0]);
-            next_y_vals.push_back(xy[1]);
-
-            //next_x_vals.push_back(car_x+(dist_inc*i)*cos(deg2rad(car_yaw)));
-            //next_y_vals.push_back(car_y+(dist_inc*i)*sin(deg2rad(car_yaw)));
-          }*/
 
           //End of TODO
           msgJson["next_x"] = next_x_vals;
