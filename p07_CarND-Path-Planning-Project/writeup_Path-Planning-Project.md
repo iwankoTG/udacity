@@ -20,8 +20,8 @@ The following points needed to be improved:
 [image3]: ./writeup/3_start_improved.jpg "start_improved"
 [image4]: ./writeup/4_success01.jpg "success01"
 [image5]: ./writeup/5_incident.jpg "incident"
-[image4]: ./writeup/6_success02.jpg "success02"
-[image4]: ./writeup/7_success03.jpg "success03"
+[image6]: ./writeup/6_success02.jpg "success02"
+[image7]: ./writeup/7_success03.jpg "success03"
 
 ### Rubric Points
 Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/1971/view). As the rubric criterias were checked automatically, I describe how I improved functions in main.cpp.  
@@ -147,5 +147,3 @@ As a result, the ego-car was able to drive stably for a long time, even though t
 
 ### summary
 With all of the above implementations, the ego car was able to drive stably for a long period of time while making appropriate lane changes.
-
-![alt text][image4]
