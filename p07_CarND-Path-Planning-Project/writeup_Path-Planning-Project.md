@@ -2,9 +2,9 @@
 
 ## Writeup
 
-### After reviewing the lessons, I thhought I could understand the concept of behavior planning.
+### After reviewing the lessons, I thhought I could understand the concept of the behavior planning.
 However, once I started the project, I noticed that writing the code of planning was very difficult.
-As the project Q&A section was really helpful to start, I followed the outlines explained in the Q&A and incorpolate most of the Arron's code. After letting the car drive, checking the points that the car did not drive well, I added my own additional code to improve the driving.   
+As the project Q&A section was really helpful to start, I followed the outlines explained in the Q&A and incorpolate most of the Aaron's code. After letting the car drive, checking the points that the car did not drive well, I added my own additional code to improve the driving.   
 
 ---
 
@@ -20,6 +20,10 @@ Following points are need to be improved.
 [image1]: ./writeup/1_start_graph.jpg "start_graph"
 [image2]: ./writeup/2_start_original.jpg "start_original"
 [image3]: ./writeup/3_start_improved.jpg "start_improved"
+[image4]: ./writeup/4_success01.jpg "success01"
+[image5]: ./writeup/5_incident.jpg "incident"
+[image4]: ./writeup/6_success02.jpg "success02"
+[image4]: ./writeup/7_success03.jpg "success03"
 
 ## Rubric Points
 ### Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/1971/view). As criterias of the rubric were checked automatically, I describe how I coded and debugged each function.  
@@ -32,14 +36,17 @@ In Arron's code, refference velocity was increased 0.224 when the velocity was l
 I improved to make the car accelerate quickly.
 To speed up the car under the restriction of jerk and accleration(max jerk of 10m/s^3, max acceralation of 10m/s^2 from the rubric), I acceralate the car with constant jerk of 9.5.
 First, I calculated what the speed whould be(end_vel) as a result of the accelaration.
-``` acceralation
+
+```
   double Jc = 9.5;
   int n_points = 50 - previous_path_x.size();
   double dt = n_points*0.02;
   double end_vel = Jc*dt*dt/2.0*2.24 + ref_vel;
 ```
+
 Then, as far as the end_vel is less than the speed limit, I acceralate with constant jerk of Jc.
-``` acceralation
+
+```
   if(end_vel < 49.5){
     for (int i = 1; i <= 50 - previous_path_x.size(); i++){
       dt = i*0.02;
@@ -50,12 +57,13 @@ Latter part of the loop was the same as Arron's code, converting back to the ori
 
 After a while, I have noticed if I acceralate the car if the end_vel was only slightly smaller than the max_vel, I could not slow down our ego car properly when there was another car on the same lane. Therefore, I changed the condition to acceralete to consider the status as follows.
 
-```acceralation
+```
 from
   if(ref_vel < 49.5){...
 to
   if(ref_vel < 40.0 && too_close == false){...}
 ```
+
 Result of the improvement is shown as follows.
 ![alt text][image1]
 
@@ -94,24 +102,48 @@ Then, I chose to change lane if the lane was available and the calculated cost w
     ref_vel -= 0.224;
   }
 ```
-#### 4.1. association
-In order to associate the observed landmark measurements with the actual landmark position, I converted the landmark positions to the vehicle coordinate for each particle. I referred Section 15 in Lesson 5. Then, I used the dataAssociation function for the association.
 
-#### 4.2. likelyhood calculation
-It was proposed to use a mulivariate Gaussian distribution to calculate the likelihood. However, because the off-diagonal elements of the covariance matrix were zero(sigma_xy = 0, sigma_xx = sigma_yy = 0.3), the multivariate Gaussian distribution was the product of the univarite Gaussian distributions in the x and y directions.I referred quiz code of Section 25 of Lesson 2.
+![alt text][image4]
+With the above modifications, the car is able to drive more than 4.32 miles without incident.
 
-|  number of particles |   success   |     error         |
-|:--------------------:|:-----------:|:-----------------:|
-|         1000         | out of time | xy:0.10 yaw:0.003 |
-|          500         | out of time | xy:0.11 yaw:0.003 |
-|          200         |   success   | xy:0.12 yaw:0.003 |
-|          100         |   success   | xy:0.12 yaw:0.003 |
-|           50         |   success   | xy:0.12 yaw:0.004 |
-|           30         |   success   | xy:0.15 yaw:0.005 |
-|           10         |   success   | xy:0.15 yaw:0.005 |
+#### 2.1. incident
+However, I found the car sometimes hit another car in front of it. That happened when the car in front was slow, but there were other cars in the next lanes and the ego-car could not change lanes.   
+
+![alt text][image5]
+
+While observing the incidents, I noticed that the above collisions always occurred when the car was in the center lane. Then it turned out that there was a mistake in the above logic in which the ego-car was not able to decelerate properly when it was in the central lane even though slow car was in front and both side lanes were occupied. The modified algorithm is shown below.
+
+```lane change
+if(r_cand != -1 && l_cand != -1){
+  if(r_cost < l_cost && r_cost < lane_change_thresh){
+    lane = r_cand;
+  }else if(l_cost <= r_cost && l_cost < lane_change_thresh){
+    lane = l_cand;
+  }else{
+    ref_vel -= 0.224;
+  }
+}else if(l_cand != -1 && l_cost < lane_change_thresh){
+  lane = l_cand;
+}else if(r_cand != -1 && r_cost < lane_change_thresh){
+  lane = r_cand;
+}else{
+  ref_vel -= 0.224;
+}
+```
+
+After the above correction, the ego-car did not collide into the in front and it could drive longer without any violations.
+
+![alt text][image6]
+
+However, I think the ego-car changed lanes very frequently, and its driving looked dangerous. In fact, rubric conditions were violated during dangerous lane changes or two consecutive lane changes.
+Therefore, I reduced the threashold (lane_change_thresh) to make it harder to change lanes.
+As a result, the ego car was able to drive stably for a long time, even though the overall speed had slowed down slightly.
+
+![alt text][image7]
 
 ### summary
-With all of the above implementations, ..................
+With all of the above implementations, the ego car was able to drive stably for a long period of time while making appropriate lane changes.
+
 Also I was upset when I noticed that my GPU time was running out. Thank you very much for increasing my GPU time quickly responding to my request.
 
 ![alt text][image4]

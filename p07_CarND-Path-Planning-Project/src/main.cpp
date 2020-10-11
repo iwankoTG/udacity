@@ -105,6 +105,8 @@ int main() {
            *   sequentially every .02 seconds
            *   follow Aron's instruction in project Q&A
            */
+          double max_vel = 49.5;
+          bool prepare_for_change = false;
           
           //avoide collision
           if(prev_size > 0){
@@ -112,6 +114,7 @@ int main() {
           }
           bool too_close = false;
           
+          //check if there is a car ahead on the same lane
           for(int i = 0; i < sensor_fusion.size(); i++){
             float d = sensor_fusion[i][6];
             if(d < (2+4*lane + 2) && d > (2+4*lane-2)){
@@ -123,11 +126,13 @@ int main() {
               check_car_s += ((double)prev_size*0.02*check_speed);
               if((check_car_s > car_s) && ((check_car_s-car_s) < 30)){
                 too_close = true;
+              //}else if((check_car_s > car_s) && ((check_car_s-car_s) < 60) && (car_speed - check_speed > 10)){
+              //  too_close = true;
               }
             }
           }
             
-          //too close
+          //decide lane change or slow down
           if(too_close){
             //check if side-lanes are available
             int r_cand = -1;
@@ -157,7 +162,7 @@ int main() {
                   r_cost += 10.0/(check_car_s - car_s);
                 }
                 if((check_car_s <= car_s) && ((car_s - check_car_s) < 60)){
-                  r_cost += 10.0/(car_s - check_car_s);
+                  r_cost += 5.0/(car_s - check_car_s);
                 }
               }
               if(l_cand != -1 && d < (2+4*l_cand + 2) && d > (2+4*l_cand-2)){
@@ -171,21 +176,33 @@ int main() {
                   l_cost += 10.0/(check_car_s - car_s);
                 }
                 if((check_car_s <= car_s) && ((car_s - check_car_s) < 60)){
-                  l_cost += 10.0/(car_s - check_car_s);
+                  l_cost += 5.0/(car_s - check_car_s);
                 }
               }
             }
             
             //decide if lane change are possible or not
+            double lane_change_thresh = 0.8;
             std::cout << "too close" << std::endl;
-            std::cout << r_cost <<", " << l_cost << std::endl;
-            if(r_cand != -1 && r_cost < l_cost && r_cost < 0.5){
-              lane = r_cand;
-            }else if(l_cand != -1 && l_cost < r_cost && l_cost < 0.5){
+            std::cout << l_cost <<", " << r_cost << std::endl;
+            
+            if(r_cand != -1 && l_cand != -1){
+              if(r_cost < l_cost && r_cost < lane_change_thresh){
+                lane = r_cand;
+              }else if(l_cost <= r_cost && l_cost < lane_change_thresh){
+                lane = l_cand;
+              }else{
+                ref_vel -= 0.224;
+              }
+            }else if(l_cand != -1 && l_cost < lane_change_thresh){
               lane = l_cand;
+            }else if(r_cand != -1 && r_cost < lane_change_thresh){
+              lane = r_cand;
             }else{
               ref_vel -= 0.224;
             }
+            
+            
           }else if(ref_vel < 49.5){
             ref_vel += 0.224;
           }
@@ -258,21 +275,23 @@ int main() {
           //
           double x_add_on = 0;
           
-          //for a very start
-          double tmp_vel = 30.0;
-          if(ref_vel < tmp_vel){            
+          //***improve point1:
+          double keep_vel = 40.0;
+          if(ref_vel < keep_vel && too_close == false){            
             //std::cout << "accelerating" << std::endl;
             double x_point;
             double y_point;
-            double Jc = 8.0;
+            double Jc = 9.5;
             int n_points = 50 - previous_path_x.size();
             double dt = n_points*0.02;
-            double end_vel = Jc*dt*dt/2.0 + ref_vel;
-            if(end_vel < tmp_vel){
+            double end_vel = Jc*dt*dt/2.0*2.24 + ref_vel;
+            if(end_vel < keep_vel){
+            std::cout << "accelerating:" <<ref_vel <<", " << end_vel << std::endl;
+            //std::cout << "coef:" <<n_points <<", " << Jc*dt*dt/2.0*2.24 << std::endl;
             //double N = target_dist/((acc*0.02*0.02/2.0 + ref_vel*0.02)/2.24);
               for (int i = 1; i <= 50 - previous_path_x.size(); i++){
                 dt = i*0.02;
-                x_point = x_add_on + (Jc*dt*dt*dt/6.0 + ref_vel*dt)/2.24;
+                x_point = x_add_on + Jc*dt*dt*dt/6.0 + (ref_vel*dt)/2.24;
                 y_point = s(x_point);
               
                 //x_add_on = x_point;
