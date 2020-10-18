@@ -19,6 +19,8 @@ void PID::Init(double Kp_, double Ki_, double Kd_) {
    p_error = 0.0;
    i_error = 0.0;
    d_error = 0.0;
+   total_error = 0.0;
+   total_count = 0;
 }
 
 void PID::UpdateError(double cte) {
@@ -30,11 +32,13 @@ void PID::UpdateError(double cte) {
    i_error += cte;
 }
 
-double PID::TotalError() {
+double PID::TotalError(double cte) {
   /**
    * TODO: Calculate and return the total error
    */
-  return -Kp*p_error - Ki*i_error - Kd+d_error;
+  total_error += cte*cte;
+  total_count += 1;
+  return total_error/total_count;
   //return 0.0;  // TODO: Add your total error calc here!
 }
 
