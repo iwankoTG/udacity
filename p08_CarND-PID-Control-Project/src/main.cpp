@@ -4,6 +4,9 @@
 #include <string>
 #include "json.hpp"
 #include "PID.h"
+#include <vector>
+#include <float.h>
+#include <time.h>
 
 // for convenience
 using nlohmann::json;
@@ -37,10 +40,24 @@ int main() {
   /**
    * TODO: Initialize the pid variable.
    */
-  //pid.Init(0.2, 0.004, 3.0);
-  pid.Init(0.2, 0.0, 3.0);
+  //pid.Init(0.2, 0.004, 3.0); //P, I, D
+  std::vector<double> p = {0.2, 0.004, 3.0};
+  //std::vector<double> dp = {0.02, 0.001, 0.3};
+  std::vector<double> dp = {0.0, 0.0, 0.0};
+  std::vector<bool> upstate = {true, true, true};
+  int n_turn = 50;
+  int ind = 0;
+  double best_err = DBL_MAX;
+  double prev_err = DBL_MAX;
+  p[ind] += dp[ind];
+  pid.Init(p);
+  clock_t start = clock();
+  double ave_speed = 0.0;
+  int ave_speed_count = 0;
+  double base_throttle = 0.3;
 
-  h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, 
+  h.onMessage([&pid, &n_turn, &p, &dp, &ind, &best_err, &prev_err, &upstate, &start, &ave_speed, &ave_speed_count, &base_throttle]
+              (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -52,6 +69,7 @@ int main() {
         auto j = json::parse(s);
 
         string event = j[0].get<string>();
+        //std::cout << j[1] << std::endl;
 
         if (event == "telemetry") {
           // j[1] is the data JSON object
@@ -59,25 +77,95 @@ int main() {
           double speed = std::stod(j[1]["speed"].get<string>());
           double angle = std::stod(j[1]["steering_angle"].get<string>());
           double steer_value;
+          ave_speed += speed;
+          ave_speed_count += 1;
           /**
            * TODO: Calculate steering value here, remember the steering value is
            *   [-1, 1].
            * NOTE: Feel free to play around with the throttle and speed.
            *   Maybe use another PID controller to control the speed!
            */
-          pid.UpdateError(cte);
+          int count = pid.UpdateError(cte);
           steer_value = pid.CalcSteering();
+          //std::cout <<"count =" <<count << std::endl;
+          
+          if(cte > 3.0 || cte < -3.0){
+            clock_t end = clock();
+            const double duration = static_cast<double>(end - start) / CLOCKS_PER_SEC * 1000.0;
+            std::cout << "OFF LANE: duration = " << duration <<"sec"<< std::endl;
+            start = clock();
+            ave_speed = 0.0;
+            ave_speed_count = 0;
+          }else if((cte > 2.0 || cte < -2.0) && base_throttle > 0.3){
+            base_throttle -= 0.1;
+          }
+          
+          if(count == n_turn){
+            double err = pid.TotalError();
+            if(upstate[ind] && err < prev_err){
+              std::cout <<"area1" <<std::endl;
+              best_err = err;
+              dp[ind] *= 1.0;
+              ind = (ind+1)%3;
+            }else if(upstate[ind] && err >= prev_err){
+              std::cout <<"area2" <<std::endl;
+              p[ind] -= dp[ind];
+              upstate[ind] = false;
+            }else if(!upstate[ind] && err < prev_err){
+              best_err = err;
+              std::cout <<"area3" <<std::endl;
+              dp[ind] *= 1.0;
+              ind = (ind+1)%3;
+            }else if(!upstate[ind] && err >= prev_err){
+              std::cout <<"area4" <<std::endl;
+              p[ind] += dp[ind];
+              dp[ind] *= 0.9;
+              upstate[ind] = true;
+              ind = (ind+1)%3;
+            }else{
+              std::cout << "ERROR" << std::endl;
+            }
+            if(best_err > err){
+              best_err = err;
+            }
+            if(upstate[ind] == true){
+              p[ind] += dp[ind];         
+              pid.Init(p);
+              std::cout << "Kp=" << p[0] <<", Ki=" << p[1] <<", Kd=" << p[2] <<", best_err=" <<best_err <<", prev_err=" <<prev_err <<", err=" <<err<<std::endl;
+              std::cout << "dKp=" << dp[0] <<", dKi=" << dp[1] <<", dKd=" << dp[2] <<", ind=" <<ind <<", cte=" <<cte <<std::endl;
+            }else{
+              p[ind] -= dp[ind];         
+              if(p[ind] < 0.0){
+                p[ind] = 0.0;
+              }
+              pid.Init(p);
+              std::cout << "Kp=" << p[0] <<", Ki=" << p[1] <<", Kd=" << p[2] <<", best_err=" <<best_err <<", prev_err=" <<prev_err <<", err=" <<err<<std::endl;
+              std::cout << "dKp=" << dp[0] <<", dKi=" << dp[1] <<", dKd=" << dp[2] <<", ind=" <<ind <<", cte=" <<cte <<std::endl;
+            }
+            prev_err = err;
+            
+            if(steer_value > 0.5 || steer_value < -0.5){
+              base_throttle -= 0.01; 
+            }
+            else if(steer_value < 0.3 && steer_value > -0.3 && base_throttle <= 0.50){
+              base_throttle += 0.01; 
+            }
+
+            clock_t end = clock();
+            const double duration = static_cast<double>(end - start) / CLOCKS_PER_SEC * 1000.0;
+            double average = ave_speed/ave_speed_count;
+            std::cout << duration << ", ave_speed(mph) = " << average <<", distance(mile) = " << duration*average/3600.0 <<", base_throttle = " << base_throttle << std::endl;
+          }
           
           // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value 
-                    << std::endl;
+          //std::cout << "CTE: " << cte << " Steering Value: " << steer_value  <<" angle: " << angle<< std::endl;
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
           //msgJson["throttle"] = 0.3; 
-          msgJson["throttle"] = 0.5;
+          msgJson["throttle"] = base_throttle;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          //std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }  // end "telemetry" if
       } else {
