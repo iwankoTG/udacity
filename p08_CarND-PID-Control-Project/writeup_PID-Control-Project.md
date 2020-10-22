@@ -9,7 +9,7 @@ The purpose of this project is to enable the vehicle to drive around the lake ra
 
 [//]: # (Image References)
 
-[image1]: ./writeup/1_start_graph.jpg "start_graph"
+[image1]: ./writeup/1_outoflane.jpg "start_graph"
 
 ### Rubric Points
 Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/1972/view). Following criterias were addressed in detail.
@@ -35,9 +35,72 @@ I put a following video in the writeup folder.
 
 
 ### 2. Describe how the final hyperparameters were chosen.
-Next, I tuned the hyperparameters.
+Next, I tuned the hyperparameters. As I was very impressed with the method called twiddle explained in section13, I wanted to implement it. However, even though it was not difficult to implement in the quiz, I could not come up with the implementation suitable for this project easily.
+Since the environment did not change in the quiz, the hyperparameters could be tuned by looking at the average of 100 steps. On the other hand, as the road curved along the way for the lake race track, the cte was affected by it. It would be accurate if I averaged over the whole track, but then it would take too much time to tune.
 
-![alt text][image7]
+#### 2.1 Manual Tuning
+Before talking about how I implemented twiddle, I would like to explane manual tuning.
+At first, original parameters given at quiz in Section11 was used. I saved the video of that situation in writeup/suc01.mp4. The vehicle was able to drive without going out of the lane. But that was partly due to the slow speed.
+
+Then I tried to change the speed by increasing the throttle when the steer_value was small.
+
+```
+if(steer_value > 0.5 || steer_value < -0.5){
+  base_throttle -= 0.01;
+}
+else if(steer_value < 0.3 && steer_value > -0.3 && base_throttle <= 0.50){
+  base_throttle += 0.01;
+}
+```
+As a result, the vehicle was able to drive faster, but sometimes it was out of the lane.
+
+![alt text][image1]
+
+So I manually tuned the parameter to make the car drive safely. Here is the result of my manual tuning. And the resulting movie was saved as ./writeup/suc03.mp4.
+```
+before:: (Kp = 0.2, Kd = 3.0, Ki = 0.004)
+after :: (Kp = 0.2, Kd = 2.0, Ki = 0.002)
+```
+
+#### 2.2 Twiddle
+After trying various ways to twiddle, I decided to update hyperparameters by 50 steps even though the curve of the road changes every 50 steps. Also, the current error was compaired with the previous error instead of best error. This was because the parameters were not updated all the time because of the accidental best error.
+
+Another difference from the quiz was that the quiz allowed us to run 100 steps in a function "run", but the project had to return to the simulator. Therefore, I introduced a variable called upstate to keep track of whether p was increased or decreased. Also, instead of using for loop, I introduced a variable called ind to update Kp, Ki, Kd in turn.
+The implementation of that part is as follows.
+
+```
+double err = pid.TotalError();
+ if(upstate[ind] && err < prev_err){
+   best_err = err;
+   dp[ind] *= 1.0;
+   ind = (ind+1)%3;
+ }else if(upstate[ind] && err >= prev_err){
+   p[ind] -= dp[ind];
+   upstate[ind] = false;
+ }else if(!upstate[ind] && err < prev_err){
+   best_err = err;
+   dp[ind] *= 1.0;
+   ind = (ind+1)%3;
+ }else if(!upstate[ind] && err >= prev_err){
+   p[ind] += dp[ind];
+   dp[ind] *= 0.9;
+   upstate[ind] = true;
+   ind = (ind+1)%3;
+ }
+
+ if(upstate[ind] == true){
+   p[ind] += dp[ind];         
+   pid.Init(p);
+ }else{
+   p[ind] -= dp[ind];         
+   if(p[ind] < 0.0){
+     p[ind] = 0.0;
+   }
+   pid.Init(p);
+ }
+ prev_err = err;
+```
+Even though the tuning did not converge as quiz, the vehicle could drive safely without getting off the lane longer. The tuned hyperparameters were (Kp = 0.15, Kd = 2.6, Ki = 0.0008) and the video of the driving was saved as  ./writeup/suc04.mp4.
 
 ### summary
-With all of the above implementations, the ego car was able to drive stably for a long period of time while making appropriate lane changes.
+Even though the vehicle could drive around the lake race track without getting off the lane, the drive was very shaky and did not seem confortable. The steering control using deep learning in project04 was smoother. I didn't know if smooth driving could be achieved if the hyperparameters were set more appropriately. Also, I would like to know the proper implementation of twiddle in this situation.
