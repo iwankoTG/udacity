@@ -1,0 +1,198 @@
+●Project11
+ROS documentation
+http://wiki.ros.org/
+
+***Lesson17
+<setup>
+$source /opt/ros/kinetics/setup.bash
+
+<start master process>
+$roscore
+ (-> ctrl-C to terminate)
+
+<run turtlesim nodes>
+$rosrun turtlesim turtlesim_node
+$rosrun turtlesim turtle_teleop_key
+ -> using arrow, I can move turtle
+
+<listing all nodes>
+$rosnode list
+ -> show all active nodes
+
+<listing all topics>
+$rostopic list
+ -> show all active topics
+
+<Get Information About a Specific Topic>
+$rostopic info /turtle1/cmd_vel
+
+<Show message intormation>
+$rosmsg info geometry_msgs/Twist
+
+$rosed geometry_msgs Twist.msg
+
+<Echo messages on a topics>
+$rostopic echo /turtle1/cmd_vel
+
+<tutorial>
+http://wiki.ros.org/ROS/Tutorials/UsingRosEd
+
+***Lesson18
+Sec03
+(venv) root@567bfcc90e16:/opt/web_terminal# cd /home/workspace
+(venv) root@567bfcc90e16:/home/workspace# mkdir -p catkin_ws/src
+(venv) root@567bfcc90e16:/home/workspace# cd catkin_ws/src
+(venv) root@567bfcc90e16:/home/workspace/catkin_ws/src# catkin_init_workspace
+(venv) root@567bfcc90e16:/home/workspace/catkin_ws# catkin_make
+
+Sec04
+(venv) root@567bfcc90e16:/home/workspace/catkin_ws# cd src
+(venv) root@567bfcc90e16:/home/workspace/catkin_ws/src# git clone https://github.com/udacity/simple_arm_01.git simple_arm
+(venv) root@567bfcc90e16:/home/workspace/catkin_ws/src# cd ..
+(venv) root@567bfcc90e16:/home/workspace/catkin_ws# catkin_make
+
+####
+Running command: "make -j4 -l4" in "/home/workspace/catkin_ws/build"
+####
+
+Sec05
+(venv) root@567bfcc90e16:/home/workspace/catkin_ws#source devel/setup.bash
+(venv) root@567bfcc90e16:/home/workspace/catkin_ws#roslaunch simple_arm robot_spawn.launch
+
+sec06
+(venv) root@567bfcc90e16:/home/workspace/catkin_ws#rosdep check simple_arm
+  All system dependencies have been satisfied
+
+sec07
+(venv) root@567bfcc90e16:/home/workspace/catkin_ws# cd src
+(venv) root@567bfcc90e16:/home/workspace/catkin_ws/src# catkin_create_pkg first_package
+
+***Lesson19
+
+!!!!!!!!!!!!!The above executions were wrong!!!
+I could succeed just follow the instructions
+
+***Lesson18
+Sec03
+(venv) root@567bfcc90e16:/opt/web_terminal# mkdir -p ~/catkin_ws/src
+(venv) root@567bfcc90e16:/opt/web_terminal# cd ~/catkin_ws/src
+(venv) root@567bfcc90e16:~/catkin_ws/src# catkin_init_workspace
+(venv) root@567bfcc90e16:~/catkin_ws/src# cd ..
+(venv) root@567bfcc90e16:~/catkin_ws# catkin_make
+
+
+Sec04
+(venv) root@567bfcc90e16:~/catkin_ws# cd src
+(venv) root@567bfcc90e16:~/catkin_ws/src# git clone https://github.com/udacity/simple_arm_01.git simple_arm
+(venv) root@567bfcc90e16:~/catkin_ws/src# cd ..
+(venv) root@567bfcc90e16:~/catkin_ws# catkin_make
+(venv) root@567bfcc90e16:~/catkin_ws# source devel/setup.bash
+(venv) root@567bfcc90e16:~/catkin_ws# roslaunch simple_arm robot_spawn.launch
+
+***Lesson19
+-----Publisher
+Sec04
+(venv) root@567bfcc90e16:~/catkin_ws# cd src/simple_arm/
+(venv) root@567bfcc90e16:~/catkin_ws/src/simple_arm/# mkdir scripts
+(venv) root@567bfcc90e16:~/catkin_ws/src/simple_arm/#cd scripts
+(venv) root@567bfcc90e16:~/catkin_ws/src/simple_arm/scripts#echo '#!/bin/bash' >> hello
+(venv) root@567bfcc90e16:~/catkin_ws/src/simple_arm/scripts#echo 'echo Hello World' >> hello
+
+(venv) root@567bfcc90e16:~/catkin_ws/src/simple_arm/scripts# chmod u+x hello
+(venv) root@567bfcc90e16:~/catkin_ws/src/simple_arm/scripts# cd ~/catkin_ws
+(venv) root@567bfcc90e16:~/catkin_ws# catkin_make
+(venv) root@567bfcc90e16:~/catkin_ws# source devel/setup.bash
+(venv) root@567bfcc90e16:~/catkin_ws# rosrun simple_arm hello
+
+(venv) root@567bfcc90e16:~/catkin_ws# cd ~/catkin_ws/src/simple_arm/scripts
+(venv) root@567bfcc90e16:~/catkin_ws/src/simple_arm/scripts# touch simple_mover
+(venv) root@567bfcc90e16:~/catkin_ws/src/simple_arm/scripts# chmod u+x simple_mover
+
+Sec05
+(venv) root@567bfcc90e16:~/catkin_ws/src/simple_arm/scripts#nano simple_mover
+ -> copy the contents of Sec05 into simple_mover
+(venv) root@567bfcc90e16:~/catkin_ws/src/simple_arm/scripts#cd ~/catkin_ws
+(venv) root@567bfcc90e16:~/catkin_ws# roslaunch simple_arm robot_spawn.launch
+
+ -> open new terminal
+(venv) root@567bfcc90e16:/opt/web_terminal# cd ~/catkin_ws
+(venv) root@567bfcc90e16:~/catkin_ws# source devel/setup.bash
+(venv) root@567bfcc90e16:~/catkin_ws# rosrun simple_arm simple_mover
+
+
+-----Service
+Sec07
+(venv) root@567bfcc90e16:~/catkin_ws# cd ~/catkin_ws/src/simple_arm/
+(venv) root@567bfcc90e16:~/catkin_ws/src/simple_arm# mkdir srv
+(venv) root@567bfcc90e16:~/catkin_ws/src/simple_arm# cd srv
+(venv) root@567bfcc90e16:~/catkin_ws/src/simple_arm/srv# touch GoToPosition.srv
+
+(venv) root@567bfcc90e16:/opt/web_terminal# cd ~/catkin_ws
+(venv) root@567bfcc90e16:~/catkin_ws# catkin_make
+(venv) root@567bfcc90e16:~/catkin_ws# cd devel/lib/python2.7/dist-packages
+(venv) root@567bfcc90e16:~/catkin_ws/devel/lib/python2.7/dist-packages# ls
+  -> simple_arm has been created
+
+(venv) root@567bfcc90e16:~/catkin_ws/devel/lib/python2.7/dist-packages#env | grep PYTHONPATH
+  -> simple_arm packages has now become part of PYTHONPATH
+
+(venv) root@567bfcc90e16:~/catkin_ws# cd ~/catkin_ws/src/simple_arm/scripts
+(venv) root@567bfcc90e16:~/catkin_ws/src/simple_arm/scripts# touch arm_mover
+(venv) root@567bfcc90e16:~/catkin_ws/src/simple_arm/scripts# chmod u+x arm_mover
+
+Sec09
+(venv) root@567bfcc90e16:/opt/web_terminal# cd ~/catkin_ws
+(venv) root@567bfcc90e16:~/catkin_ws# catkin_make
+(venv) root@567bfcc90e16:~/catkin_ws# source devel/setup.bash
+(venv) root@567bfcc90e16:~/catkin_ws# roslaunch simple_arm robot_spawn.launch
+
+ -> open new terminal
+(venv) root@567bfcc90e16:/opt/web_terminal# cd ~/catkin_ws
+(venv) root@567bfcc90e16:~/catkin_ws# rosnode list
+ -> /arm_mover
+(venv) root@567bfcc90e16:~/catkin_ws# rosservice list
+ -> /arm_mover/safe_move
+
+Display Camera Image
+(venv) root@567bfcc90e16:~/catkin_ws# rqt_image_view /rgb_camera/image_raw
+
+(venv) root@567bfcc90e16:/opt/web_terminal# cd ~/catkin_ws
+(venv) root@567bfcc90e16:~/catkin_ws# source devel/setup.bash
+(venv) root@567bfcc90e16:~/catkin_ws# rosservice call /arm_mover/safe_move "joint_1: 1.57 
+join2: 1.57"
+  -> camera image shows up
+
+(venv) root@567bfcc90e16:~/catkin_ws#rosparam set /arm_mover/max_joint_2_angle 1.57
+
+(venv) root@567bfcc90e16:~/catkin_ws# rosservice call /arm_mover/safe_move "joint_1: 1.57 
+join2: 1.57"
+
+
+----Subscriber
+Sec11
+
+(venv) root@567bfcc90e16:~/catkin_ws# cd ~/catkin_ws/src/simple_arm/scripts
+(venv) root@567bfcc90e16:~/catkin_ws/src/simple_arm/scripts# touch look_away
+(venv) root@567bfcc90e16:~/catkin_ws/src/simple_arm/scripts# chmod u+x look_away
+
+Sec13
+(venv) root@567bfcc90e16:/opt/web_terminal# cd ~/catkin_ws
+(venv) root@567bfcc90e16:~/catkin_ws# catkin_make
+(venv) root@567bfcc90e16:~/catkin_ws# source devel/setup.bash
+(venv) root@567bfcc90e16:~/catkin_ws# roslaunch simple_arm robot_spawn.launch
+
+ -> open new terminal
+(venv) root@567bfcc90e16:/opt/web_terminal# cd ~/catkin_ws
+(venv) root@567bfcc90e16:~/catkin_ws# source devel/setup.bash
+(venv) root@567bfcc90e16:~/catkin_ws# rosservice call /arm_mover/safe_move "joint_1: 0 
+join2: 0"
+
+(venv) root@567bfcc90e16:~/catkin_ws# rqt_image_view /rgb_camera/image_raw
+
+----Logmessage
+~/.ros/log or ROS_ROOT/log or
+#roscd log
+
+
+
+
