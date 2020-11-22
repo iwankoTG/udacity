@@ -56,9 +56,10 @@ class WaypointUpdater(object):
     #            closest_waypoint_idx = self.get_closest_waypoint_idx()
     #            self.publish_waypoints(closest_waypoint_idx)
     #        rate.sleep()
+    
     #changed from walkthrough of sec13
     def loop(self):
-        rate = rospy.Rate(30)
+        rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             if self.pose and self.base_lane:
                 self.publish_waypoints()
@@ -110,7 +111,9 @@ class WaypointUpdater(object):
             lane.waypoints = base_waypoints
         else:
             lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
-
+            
+        #rospy.logwarn("generate_lane")
+        #rospy.logwarn(closest_idx, farthest_idx)
         return lane
 
     def decelerate_waypoints(self, waypoints, closest_idx):
@@ -132,20 +135,23 @@ class WaypointUpdater(object):
         return temp
 
     def pose_cb(self, msg):
+        #rospy.logwarn("pose_cb")
         # TODO: Implement from instruction of sec06
         self.pose = msg
         #pass
 
     def waypoints_cb(self, waypoints):
+        rospy.logwarn("waypoints_cb")
         # TODO: Implement from instruction of sec06
         self.base_lane = waypoints
         if not self.waypoints_2d:
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
             self.waypoint_tree = KDTree(self.waypoints_2d)
-            #rospy.logwarn("get original waypoint")
+            rospy.logwarn("get original waypoint")
         #pass
 
     def traffic_cb(self, msg):
+        #rospy.logwarn("traffic_cb")
         # TODO: Callback for /traffic_waypoint message. Implement
         self.stopline_wp_idx = msg.data
         #pass
