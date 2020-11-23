@@ -136,17 +136,17 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        #rospy.logwarn("tl_detector:get_light_state")
-        return light.state
+        rospy.logwarn("tl_detector:get_light_state")
+        #return light.state
     
-        #if(not self.has_image):
-        #    self.prev_light_loc = None
-        #    return False
+        if(not self.has_image):
+            self.prev_light_loc = None
+            return False
 
-        #cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
         #Get classification
-        #return self.light_classifier.get_classification(cv_image)
+        return self.light_classifier.get_classification(cv_image)
 
     def process_traffic_lights(self):
         rospy.logwarn("tl_detector:process_traffic_lights")
@@ -166,7 +166,6 @@ class TLDetector(object):
         if(self.pose):
             #car_position = self.get_closest_waypoint(self.pose.pose)
             car_wp_idx = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
-            print("car_waypoint_idx, " + str(car_wp_idx))
 
         #TODO find the closest visible traffic light (if one exists)
         diff = len(self.waypoints.waypoints)
@@ -182,9 +181,14 @@ class TLDetector(object):
                 closest_light = light
                 line_wp_idx = temp_wp_idx
 
-        if closest_light:
+        print("car_waypoint_idx= " + str(car_wp_idx) + ", closest_light_idx= " + str(line_wp_idx) )
+        #if closest_light:
+        #    state = self.get_light_state(closest_light)
+        #    print("closest_light", state, line_wp_idx)
+        #    return line_wp_idx, state
+        if closest_light and line_wp_idx - car_wp_idx < 200:
             state = self.get_light_state(closest_light)
-            print("closest_light", state, line_wp_idx)
+            #print("closest_light", state, line_wp_idx)
             return line_wp_idx, state
 
         #self.waypoints = None

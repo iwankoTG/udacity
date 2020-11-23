@@ -16,7 +16,7 @@ class TLClassifier(object):
         self.detection_scores = detection_graph.get_tensor_by_name('detection_scores:0')
         self.detection_classes = detection_graph.get_tensor_by_name('detection_classes:0')
 
-        self.confidence_cutoff = 0.2
+        self.confidence_cutoff = 0.3
 
         self.sess = tf.Session(graph=detection_graph)
 
@@ -53,7 +53,6 @@ class TLClassifier(object):
         width = image.shape[1]
         height = image.shape[0]
         box_coords = self.to_image_coords(boxes, height, width)
-        #print(width, height, box_coords)
 
         state = self.get_traffic_light_state(image, box_coords)
 
@@ -76,7 +75,7 @@ class TLClassifier(object):
         n = len(classes)
         idxs = []
         for i in range(n):
-            if scores[i] >= min_score and classes[i] == 10:
+            if scores[i] >= min_score and classes[i] == 10 and boxes[i][2] - boxes[i][0] > 0.07:
                 idxs.append(i)
 
         filtered_boxes = boxes[idxs, ...]
@@ -101,17 +100,19 @@ class TLClassifier(object):
     def get_traffic_light_state(self, image, boxes):
         """Classify traffic lights in red, green and yellow"""
         state_red = 0
-        print("# of detected boxes:", len(boxes))
+        #print("# of detected boxes:", len(boxes))
         for i in range(len(boxes)):
             bot, left, top, right = boxes[i, ...]
-            bot = int(bot + 10)
-            top = int(top - 10)
-            left = int(left + 5)
-            right = int(right - 5)
+            buf = (top - bot)*0.1
+            bot = int(bot + buf)
+            top = int(top - buf)
+            left = int(left + buf/2)
+            right = int(right - buf/2)
             box_height = int((top - bot)/3.0)
             box_red = image[int(bot):int(bot+box_height),int(left):int(right)]
-            box_ylw = image[int(bot+box_height):int(top-box_height),int(left):int(right)] 
-            box_grn = image[int(top-box_height):int(top),int(left):int(right)]
+            #box_ylw = image[int(bot+box_height):int(top-box_height),int(left):int(right)] 
+            #box_grn = image[int(top-box_height):int(top),int(left):int(right)]
+            
             #cv2.imwrite("/home/workspace/CarND-Capstone/ros/src/tl_detector/light_classification/box_red.jpg", box_red)
             #cv2.imwrite("/home/workspace/CarND-Capstone/ros/src/tl_detector/light_classification/box_ylw.jpg", box_ylw)
             #cv2.imwrite("/home/workspace/CarND-Capstone/ros/src/tl_detector/light_classification/box_grn.jpg", box_grn)
@@ -119,13 +120,18 @@ class TLClassifier(object):
             #print(bot, left, top, right)
             #print(box_height)
             #print(box_red.shape)
-            print(np.max(box_red[2:-2,2:-2,0]), np.max(box_red[2:-2,2:-2,1]), np.max(box_red[2:-2,2:-2,2]))
+                        
             #print(np.max(box_ylw[2:-2,2:-2,0]), np.max(box_ylw[2:-2,2:-2,1]), np.max(box_ylw[2:-2,2:-2,2]))
             #print(np.max(box_grn[2:-2,2:-2,0]), np.max(box_grn[2:-2,2:-2,1]), np.max(box_grn[2:-2,2:-2,2]))
-            #print(np.mean(box_red[2:-2,2:-2,0]), np.mean(box_red[2:-2,2:-2,1]), np.mean(box_red[2:-2,2:-2,2]))
-            if(np.max(box_red[2:-2,2:-2,2]) > 240): state_red +=1
+            #print(np.mean(box_red[:,:,0]), np.mean(box_red[:,:,1]), np.mean(box_red[:,:,2]))
+            
+            val = np.mean(box_red[:,:,2])/(np.mean(box_red[:,:,0]) + np.mean(box_red[:,:,1]) + np.mean(box_red[:,:,2]))
+            #print(val)
+            #if(np.max(box_red[:,:,2]) > 245): state_red +=1
+            if(val > 0.5): state_red +=1
 
         if state_red > 0:
+            print("********BREAK!!!*********")
             return TrafficLight.RED
         else:
             return TrafficLight.UNKNOWN
