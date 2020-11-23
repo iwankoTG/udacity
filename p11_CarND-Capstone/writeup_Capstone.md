@@ -1,10 +1,8 @@
 # **Capstone**
 
 ### Writeup
-
-The purpose of this project is to write code to navigate Carla around the test track using ROS system.
-Following the four workthroughs of the project. I could make the vehicle go around the simulator track using the information of traffic signal directory from the simulator.
-Therefore, this writeup is about how to make classifier of the traffic light for Carle to judge the traffic signal from the camera image.
+The purpose of this project is to write code to navigate Carla around the test track using the ROS system.
+Based on the four workthroughs of the project, I could make the vehicle go around the simulator track using the information of traffic signal directory from the simulator. After that, I modified them to get the traffic signal information from the camera image using the created classifier.
 ---
 
 [//]: # (Image References)
@@ -24,10 +22,10 @@ Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/1
 
 ---
 ### 1. Make the vehicle go around the simulator track using /vehicle/traffic_lights
-Even after implementing all the points suggested in the four walkthroughs, the vehicle did not go around the trach not stop at the red traffic lights. I fixed following three points.
+Even after implementing all the codes explained in the four walkthroughs, the vehicle did not go around the track with properly following the traffic lights. I fixed following three points.
 
-#### 1.1 Correct waypoints_cb of tl_detector as that of waypoint_updater.py
-Even thouth it was not mentioned in the walkthrough of tl_detector.py(Sec11), it was necessary to define waypoints_tree and waypoints_2d in tl_detector.py, similar to waypoint_updater.py. Therefore, I coorected waypoints_cb of tl_detector.py as follows.
+#### 1.1 Correct waypoints_cb of tl_detector
+Even thouth it was not mentioned in the walkthrough of tl_detector.py(Sec11), it was necessary to define waypoints_tree and waypoints_2d in tl_detector.py, similar to waypoint_updater.py. Therefore, I corrected waypoints_cb of tl_detector.py as follows.
 
 ```
 def waypoints_cb(self, waypoints):
@@ -37,9 +35,9 @@ def waypoints_cb(self, waypoints):
         self.waypoint_tree = KDTree(self.waypoints_2d)
 ```
 
-#### 1.2 define loop function in tl_detector.py as in waypoint_updater.py
-Similary, loop function was necessary in the tl_detector.py to control the frequency of function call.
-Before this correction, the vehicle could not stop at the traffic light at all because the response of light.state was so slow (about 10 second late!). Therefore, I changed rospy.spin() to self.loop() at the end of init function of the TLDetector class, and add following loop function.
+#### 1.2 Define loop function in tl_detector.py as in waypoint_updater.py
+Similary, loop function was necessary in the tl_detector.py to control the frequency of function calls.
+Prior to this correction, the light.state response was so slow(about 10 second late!) that the vehicle could not stop at the traffic light. Therefore, I changed rospy.spin() to self.loop() at the end of the init function of the TLDetector class and added the following loop function.
 
 ```
 def loop(self):
@@ -50,18 +48,18 @@ def loop(self):
         rate.sleep()
 ```
 
-###1.3 Rate change
-In the walkthrough, a rate in rospy.Rate(50) was given as 50. As Steven and Aaron discussed that 50Hz was too fast. I changed it from 50 to 30Hz. It worked when I had not used camera images, but once I put the camera on, the vehicle started to wiggle and move out of the waypoints. When I changed the rate from 30Hz to 10Hz, the vehicle moved correctly even when the camera was turned on, and it stopped properly at the red traffic light.
+#### 1.3 Rate change
+In the walkthrough, the rate of rospy.Rate(50) was given as 50. As Steven and Aaron said that 50Hz was too fast, I changed it from 50Hz to 30Hz. It worked when I was not using the camera images, but when I put on the camera, the vehicle started shaking and moving from the waypoints. Therefore, I changed the rate from 30Hz to 10Hz. As a result, the vehicle moved properly when the camera was turned on and stopped properly at the red light.
 
 ![alt text][image1]
 ![alt text][image2]
 
 
 ### 2. Make Classifier
-Next, I tried to add classifier. As pretrained models were provided in Sec10, I planned to use those pretrained models to detect traffic lights, and classify them in red, yellow and blue using color information within the detected region.
+Since Sec10 provided pre-trained models, I planned to use those models to detect traffic lights. After the detection, using the color information in the detected area, I planned to classify them in red, yellow and green.
 
 #### 2.1 Traffic light detection
-I compared processing speed and accuracy to select the best pretrained model from ssd, rfcn, faster rcnn given in sec10.
+I compared the processing speed and accuracy and selected the optimal pre-trained model from the ssd, rfcn, faster rcnn provided in sec10.
 
 |  number of particles |   speed     |   accuracy  |
 |:--------------------:|:-----------:|:-----------:|
@@ -73,17 +71,17 @@ I compared processing speed and accuracy to select the best pretrained model fro
 ![alt text][image4]
 ![alt text][image5]
 
-The detection accuracy of ssd was not high, but I thought that it was suitable as a classifier this time because of its high processing speed.
+The detection accuracy of the ssd was not high, but I thought it was suitable as a classifier this time because of its high processing speed.
 
-For simulator images, ssd could detect traffic signals if I tuned confidence_cutoff. Since there are few confusing objects in the simulator, I decided to use it with the lower confidence_cutoff.
+For simulator images, adjusting confidence_cutoff will allow the ssd to detect traffic lights. Since there are few confusing objects in the simulator, I decided to use a low confidence_cutoff.
 
 ![alt text][image6]
 ![alt text][image7]
 
 #### 2.2 Classification
-After getting regions of traffic light, the region was divided into three areas in the vertical direction, and the signal was identified by detecting the color of each area.
-That part of the algorithm was written at get_traffic_light_state function in tl_classifier.py.
-I calculated mean of each color of the area, and if the red intensity was stronger than other, I decided that the red signal was on.
+After acquiring the area of the traffic light, the area was vertically divided into three areas, and the signal was identified by detecting the color of each area.
+That part of the algorithm was described in the get_traffic_light_state function of tl_classifier.py.
+I calculated the average of each color in the region, and if the red intensity was stronger than the others, I determined that the red signal was on.
 
 ```
 box_red = image[int(bot):int(bot+box_height),int(left):int(right)]
@@ -92,7 +90,7 @@ if(val > 0.5): state_red +=1
 ```
 
 #### 2.3 Others
-To drive the vehicle smoothly, it was important to reduce the frequency of image processing. Therefore, I changed the logic to call process_traffic_lights only when vehicle's position was less than 200 to the closest light waypoint. Without this modification, the car drive away to the waypoints when it seemed there were no obstacles around the car.  
+In order to drive the vehicle smoothly, it was important to reduce the frequency of image processing. Therefore, I changed the logic to call process_traffic_lights only when the vehicle was less than 200 to the nearest traffic light waypoint. Without this modification, the car was off the waypoints, even if there were no obstacles around the car.  
 
 ```
 if closest_light and line_wp_idx - car_wp_idx < 200:
@@ -101,10 +99,10 @@ if closest_light and line_wp_idx - car_wp_idx < 200:
 ```
 
 ### summary
-With all the above implementation, I could make the vehicle go around the simulator track with properly following the traffic light. However, as I made a lot of manual tuning to make the classifier works for the simulator, I'm afraid my code was not robust enough for Carla to drive safely.
+With all the above implementations, the vehicle was able to go around the simulator track while properly following the traffic lights.
 
 ![alt text][image8]
 ![alt text][image9]
 
-The core probelm was the classifier. I should have fine tune the ssd pre-trained model to detect separately for each red, yellow, green signal. Or at least I wannted to make it detect more small traffic signals.
-I tried to tune the ssd with transfer learning, but I could not make it on time. I'll contine to try, so I'd be grateful if you give me advice in the feedback.
+However, as I have made a lot of manual adjustment to get the classifier to work in the simulator, I'm afraid my code was not robust enough for Carla to drive safely.
+I wanted to fine-tune the ssd with transfer learning, but I could not do it on time. I will contine to try it out, so I would be appreciated your feedback and advice for transfer learning of objectdetection, especially with tensorflow.keras.
