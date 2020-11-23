@@ -16,6 +16,8 @@ Therefore, this writeup is about how to make classifier of the traffic light for
 [image5]: ./writeup/5_frcn_0.8_0.6.jpg "frcn"
 [image6]: ./writeup/6_ssd_sim01_yel_0.6_0.3.jpg "frcn"
 [image7]: ./writeup/7_ssd_sim05_0.6_0.3.jpg "frcn"
+[image8]: ./writeup/8_stop_at_traffic_lights.jpg "frcn"
+[image9]: ./writeup/9_final_goal.jpg "frcn"
 
 ### Rubric Points
 Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/1969/view).
@@ -80,5 +82,29 @@ For simulator images, ssd could detect traffic signals if I tuned confidence_cut
 
 #### 2.2 Classification
 After getting regions of traffic light, the region was divided into three areas in the vertical direction, and the signal was identified by detecting the color of each area.
+That part of the algorithm was written at get_traffic_light_state function in tl_classifier.py.
+I calculated mean of each color of the area, and if the red intensity was stronger than other, I decided that the red signal was on.
+
+```
+box_red = image[int(bot):int(bot+box_height),int(left):int(right)]
+val = np.mean(box_red[:,:,2])/(np.mean(box_red[:,:,0]) + np.mean(box_red[:,:,1]) + np.mean(box_red[:,:,2]))
+if(val > 0.5): state_red +=1
+```
+
+#### 2.3 Others
+To drive the vehicle smoothly, it was important to reduce the frequency of image processing. Therefore, I changed the logic to call process_traffic_lights only when vehicle's position was less than 200 to the closest light waypoint. Without this modification, the car drive away to the waypoints when it seemed there were no obstacles around the car.  
+
+```
+if closest_light and line_wp_idx - car_wp_idx < 200:
+   state = self.get_light_state(closest_light)
+   return line_wp_idx, state
+```
 
 ### summary
+With all the above implementation, I could make the vehicle go around the simulator track with properly following the traffic light. However, as I made a lot of manual tuning to make the classifier works for the simulator, I'm afraid my code was not robust enough for Carla to drive safely.
+
+![alt text][image8]
+![alt text][image9]
+
+The core probelm was the classifier. I should have fine tune the ssd pre-trained model to detect separately for each red, yellow, green signal. Or at least I wannted to make it detect more small traffic signals.
+I tried to tune the ssd with transfer learning, but I could not make it on time. I'll contine to try, so I'd be grateful if you give me advice in the feedback.
