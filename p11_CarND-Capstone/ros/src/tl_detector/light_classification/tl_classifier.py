@@ -1,22 +1,24 @@
 from styx_msgs.msg import TrafficLight
 import tensorflow as tf
+import numpy as np
+import cv2
 
 class TLClassifier(object):
     def __init__(self):
         #TODO load classifier
         #pass
-        SSD_GRAPH_FILE = 'ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb'
-        detection_graph = load_graph(SSD_GRAPH_FILE)
+        SSD_GRAPH_FILE = '/home/workspace/CarND-Capstone/ros/src/tl_detector/light_classification/ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb'
+        detection_graph = self.load_graph(SSD_GRAPH_FILE)
 
         # copied from sec10:CarND-Object-Detection-Lab
-        image_tensor = detection_graph.get_tensor_by_name('image_tensor:0')
-        detection_boxes = detection_graph.get_tensor_by_name('detection_boxes:0')
-        detection_scores = detection_graph.get_tensor_by_name('detection_scores:0')
-        detection_classes = detection_graph.get_tensor_by_name('detection_classes:0')
+        self.image_tensor = detection_graph.get_tensor_by_name('image_tensor:0')
+        self.detection_boxes = detection_graph.get_tensor_by_name('detection_boxes:0')
+        self.detection_scores = detection_graph.get_tensor_by_name('detection_scores:0')
+        self.detection_classes = detection_graph.get_tensor_by_name('detection_classes:0')
 
-        confidence_cutoff = 0.2
+        self.confidence_cutoff = 0.2
 
-        sess = tf.Session(graph=detection_graph)
+        self.sess = tf.Session(graph=detection_graph)
 
 
 
@@ -34,25 +36,31 @@ class TLClassifier(object):
         image_np = np.expand_dims(np.asarray(image, dtype=np.uint8), 0)
 
         (boxes, scores, classes) = self.sess.run([self.detection_boxes, self.detection_scores, self.detection_classes],
-                                        feed_dict={image_tensor: image_np})
+                                        feed_dict={self.image_tensor: image_np})
 
+        #print(boxes)
+        #print(scores)
+        #print(classes)
         # Remove unnecessary dimensions
         boxes = np.squeeze(boxes)
         scores = np.squeeze(scores)
         classes = np.squeeze(classes)
 
         # Filter boxes with a confidence score less than `confidence_cutoff`
-        boxes, scores, classes = filter_boxes2(self.confidence_cutoff, boxes, scores, classes)
+        boxes, scores, classes = self.filter_boxes2(self.confidence_cutoff, boxes, scores, classes)
 
         # This converts the coordinates actual location on the image.
-        width, height = image.size
-        box_coords = to_image_coords(boxes, height, width)
+        width = image.shape[1]
+        height = image.shape[0]
+        box_coords = self.to_image_coords(boxes, height, width)
+        #print(width, height, box_coords)
 
-        stete = get_traffic_light_state(image, box_coords)
+        state = self.get_traffic_light_state(image, box_coords)
 
-        return TrafficLight.UNKNOWN
+        #return TrafficLight.UNKNOWN
+        return state
 
-    def load_graph(graph_file):
+    def load_graph(self, graph_file):
         """Loads a frozen inference graph"""
         graph = tf.Graph()
         with graph.as_default():
@@ -63,7 +71,7 @@ class TLClassifier(object):
                 tf.import_graph_def(od_graph_def, name='')
         return graph
 
-    def filter_boxes2(min_score, boxes, scores, classes):
+    def filter_boxes2(self, min_score, boxes, scores, classes):
         """Return boxes with a confidence >= `min_score` and class of traffic lights(10)"""
         n = len(classes)
         idxs = []
@@ -76,7 +84,7 @@ class TLClassifier(object):
         filtered_classes = classes[idxs, ...]
         return filtered_boxes, filtered_scores, filtered_classes
 
-    def to_image_coords(boxes, height, width):
+    def to_image_coords(self, boxes, height, width):
         """
         The original box coordinate output is normalized, i.e [0, 1].
 
@@ -90,23 +98,34 @@ class TLClassifier(object):
         box_coords[:, 3] = boxes[:, 3] * width
         return box_coords
 
-    def get_traffic_light_state(image, boxes):
+    def get_traffic_light_state(self, image, boxes):
         """Classify traffic lights in red, green and yellow"""
         state_red = 0
+        print("# of detected boxes:", len(boxes))
         for i in range(len(boxes)):
             bot, left, top, right = boxes[i, ...]
+            bot = int(bot + 10)
+            top = int(top - 10)
+            left = int(left + 5)
+            right = int(right - 5)
             box_height = int((top - bot)/3.0)
-            box_red = np.array(image.crop((left, bot, right, bot+box_height)))
-            box_ylw = np.array(image.crop((left, bot+box_height, right, top-box_height)))
-            box_grn = np.array(image.crop((left, top-box_height, right, top)))
+            box_red = image[int(bot):int(bot+box_height),int(left):int(right)]
+            box_ylw = image[int(bot+box_height):int(top-box_height),int(left):int(right)] 
+            box_grn = image[int(top-box_height):int(top),int(left):int(right)]
+            #cv2.imwrite("/home/workspace/CarND-Capstone/ros/src/tl_detector/light_classification/box_red.jpg", box_red)
+            #cv2.imwrite("/home/workspace/CarND-Capstone/ros/src/tl_detector/light_classification/box_ylw.jpg", box_ylw)
+            #cv2.imwrite("/home/workspace/CarND-Capstone/ros/src/tl_detector/light_classification/box_grn.jpg", box_grn)
+            #break
             #print(bot, left, top, right)
             #print(box_height)
             #print(box_red.shape)
-            #print(np.max(box_red[2:-2,2:-2,0]), np.max(box_red[2:-2,2:-2,1]), np.max(box_red[2:-2,2:-2,2]))
+            print(np.max(box_red[2:-2,2:-2,0]), np.max(box_red[2:-2,2:-2,1]), np.max(box_red[2:-2,2:-2,2]))
+            #print(np.max(box_ylw[2:-2,2:-2,0]), np.max(box_ylw[2:-2,2:-2,1]), np.max(box_ylw[2:-2,2:-2,2]))
+            #print(np.max(box_grn[2:-2,2:-2,0]), np.max(box_grn[2:-2,2:-2,1]), np.max(box_grn[2:-2,2:-2,2]))
             #print(np.mean(box_red[2:-2,2:-2,0]), np.mean(box_red[2:-2,2:-2,1]), np.mean(box_red[2:-2,2:-2,2]))
-            if(np.max(box_red[2:-2,2:-2,0]) > 240): state_red +=1
+            if(np.max(box_red[2:-2,2:-2,2]) > 240): state_red +=1
 
         if state_red > 0:
             return TrafficLight.RED
         else:
-            return TrafficLight.UNKOWN
+            return TrafficLight.UNKNOWN
