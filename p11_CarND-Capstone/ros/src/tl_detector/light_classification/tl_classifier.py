@@ -2,12 +2,16 @@ from styx_msgs.msg import TrafficLight
 import tensorflow as tf
 import numpy as np
 import cv2
+import os
 
 class TLClassifier(object):
     def __init__(self):
         #TODO load classifier
         #pass
-        SSD_GRAPH_FILE = '/home/workspace/CarND-Capstone/ros/src/tl_detector/light_classification/ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb'
+        #SSD_GRAPH_FILE = '/home/workspace/CarND-Capstone/ros/src/tl_detector/light_classification/ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb'
+        SSD_GRAPH_FILE = 'light_classification/ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb'
+        path = os.getcwd()
+        print(path)
         detection_graph = self.load_graph(SSD_GRAPH_FILE)
 
         # copied from sec10:CarND-Object-Detection-Lab
@@ -38,9 +42,6 @@ class TLClassifier(object):
         (boxes, scores, classes) = self.sess.run([self.detection_boxes, self.detection_scores, self.detection_classes],
                                         feed_dict={self.image_tensor: image_np})
 
-        #print(boxes)
-        #print(scores)
-        #print(classes)
         # Remove unnecessary dimensions
         boxes = np.squeeze(boxes)
         scores = np.squeeze(scores)
@@ -112,26 +113,12 @@ class TLClassifier(object):
             box_red = image[int(bot):int(bot+box_height),int(left):int(right)]
             #box_ylw = image[int(bot+box_height):int(top-box_height),int(left):int(right)] 
             #box_grn = image[int(top-box_height):int(top),int(left):int(right)]
-            
-            #cv2.imwrite("/home/workspace/CarND-Capstone/ros/src/tl_detector/light_classification/box_red.jpg", box_red)
-            #cv2.imwrite("/home/workspace/CarND-Capstone/ros/src/tl_detector/light_classification/box_ylw.jpg", box_ylw)
-            #cv2.imwrite("/home/workspace/CarND-Capstone/ros/src/tl_detector/light_classification/box_grn.jpg", box_grn)
-            #break
-            #print(bot, left, top, right)
-            #print(box_height)
-            #print(box_red.shape)
-                        
-            #print(np.max(box_ylw[2:-2,2:-2,0]), np.max(box_ylw[2:-2,2:-2,1]), np.max(box_ylw[2:-2,2:-2,2]))
-            #print(np.max(box_grn[2:-2,2:-2,0]), np.max(box_grn[2:-2,2:-2,1]), np.max(box_grn[2:-2,2:-2,2]))
-            #print(np.mean(box_red[:,:,0]), np.mean(box_red[:,:,1]), np.mean(box_red[:,:,2]))
-            
+                                                
             val = np.mean(box_red[:,:,2])/(np.mean(box_red[:,:,0]) + np.mean(box_red[:,:,1]) + np.mean(box_red[:,:,2]))
-            #print(val)
-            #if(np.max(box_red[:,:,2]) > 245): state_red +=1
             if(val > 0.5): state_red +=1
 
         if state_red > 0:
-            print("********BREAK!!!*********")
+            #print("********BREAK!!!*********")
             return TrafficLight.RED
         else:
             return TrafficLight.UNKNOWN
